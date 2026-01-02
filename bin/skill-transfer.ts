@@ -3,6 +3,7 @@
 import { program } from 'commander';
 import { importCommand, ImportOptions } from '../src/commands/import';
 import { ImportMode } from '../src/core/types';
+import { runInteractiveMode } from '../src/interactive';
 
 program
     .name('st')
@@ -37,4 +38,18 @@ program
         importCommand(skillPath, importOptions);
     });
 
-program.parse();
+// 交互模式命令
+program
+    .command('interactive', { isDefault: true })
+    .description('进入交互式管理界面')
+    .action(async () => {
+        await runInteractiveMode();
+    });
+
+// 解析命令行参数
+// 如果没有参数，进入交互模式
+if (process.argv.length <= 2) {
+    runInteractiveMode().catch(console.error);
+} else {
+    program.parse();
+}

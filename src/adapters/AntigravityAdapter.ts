@@ -13,6 +13,10 @@ export class AntigravityAdapter implements Adapter {
         return '.agent/workflows';
     }
 
+    getGlobalDir(): string {
+        return path.join(os.homedir(), '.gemini', 'antigravity', 'global_workflows');
+    }
+
     async import(sourcePath: string, projectRoot: string, mode: ImportMode): Promise<void> {
         const absoluteSourcePath = path.resolve(sourcePath);
 
@@ -48,4 +52,43 @@ export class AntigravityAdapter implements Adapter {
 
         console.log(`\n导入完成! 文件已复制到 ${targetPath}/`);
     }
+
+    /**
+     * 列出 Global 目录中已安装的技能
+     */
+    async listInstalled(): Promise<string[]> {
+        const globalDir = this.getGlobalDir();
+
+        if (!await fs.pathExists(globalDir)) {
+            return [];
+        }
+
+        const files = await fs.readdir(globalDir);
+        // 技能文件以 .md 结尾，去掉扩展名作为技能名
+        return files
+            .filter(f => f.endsWith('.md'))
+            .map(f => f.replace(/\.md$/, ''));
+    }
+
+    /**
+     * 检查技能是否已在 Global 模式下安装
+     */
+    async isInstalled(skillName: string): Promise<boolean> {
+        const skillPath = path.join(this.getGlobalDir(), `${skillName}.md`);
+        return fs.pathExists(skillPath);
+    }
+
+    /**
+     * 删除 Global 模式下已安装的技能
+     */
+    async deleteSkill(skillName: string): Promise<void> {
+        const skillPath = path.join(this.getGlobalDir(), `${skillName}.md`);
+
+        if (!await fs.pathExists(skillPath)) {
+            throw new Error(`技能 "${skillName}" 未安装`);
+        }
+
+        await fs.remove(skillPath);
+    }
 }
+
