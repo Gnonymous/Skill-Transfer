@@ -24,9 +24,11 @@
     "ai",
     "skills",
     "antigravity",
-    "workflow"
+    "workflow",
+    "gemini",
+    "agent"
   ],
-  "author": "",
+  "author": "gnonymous <gnonymous.ai@gmail.com>",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/Gnonymous/Skill-Transfer/issues"

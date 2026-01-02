@@ -1,51 +1,113 @@
 # Skill Transfer CLI
 
-CLI tool to transfer AI coding skills/configurations between different tools.
+![npm version](https://img.shields.io/npm/v/skill-transfer)
+![license](https://img.shields.io/npm/l/skill-transfer)
+![TypeScript](https://img.shields.io/badge/language-TypeScript-blue)
 
-## Installation
+**Skill Transfer CLI** (`st`) is a powerful tool designed to streamline the management and sharing of AI coding skills (workflows, prompts, and configurations) between different environments and tools.
+
+It currently supports **Google Antigravity** (Gemini) adapters, allowing you to easily import workflows into your global user configuration or specific project repositories.
+
+## ✨ Features
+
+- **Interactive TUI**: A beautiful, easy-to-use terminal interface for managing skills.
+- **Dual Import Modes**:
+  - 🌍 **Global**: Installs skills to your user-level configuration (available across all projects).
+  - 📦 **Local**: Installs skills to a specific project's `.agent/workflows` directory.
+- **Smart Scanning**: Automatically detects Valid skills (directories containing `SKILL.md`) from your local collection.
+- **Auto-Adaptation**: Automatically renames and formats files for the target environment (e.g., converting `SKILL.md` to `<SkillName>.md`).
+- **Extensible**: Designed with an adapter pattern to support future tools (Claude Code, Cursor, etc.).
+
+## 📦 Installation
 
 ```bash
 npm install -g skill-transfer
 ```
 
-## Usage
+## 🚀 Usage
+
+### Interactive Mode (Recommended)
+
+The easiest way to use the tool is through the interactive menu:
 
 ```bash
-# 查看帮助
-st --help
-st import --help
-
-# Global 模式 (默认)：导入到全局配置
-st import <skill-path> -t antigravity
-
-# Local 模式：导入到指定项目的配置
-st import <skill-path> -t antigravity -m local -p <project-path>
-
-# 示例
-st import ./my-skills/code-review -t antigravity
-st import ./my-skills/code-review -t antigravity -m local -p /path/to/my-project
+st interactive
+# or simply
+st
 ```
 
-## Rename Logic
+This will launch the TUI where you can:
+1. Set/Change your local skill source directory.
+2. Browse and select multiple skills (Space to select).
+3. Choose the target environment (e.g., Global vs. Local Project).
+4. Execute the import with a single keypress.
 
-导入时，源文件夹内的 `SKILL.md` 会自动重命名为 `<源文件夹名>.md`。其他文件保持名称不变。
-  - Global: `~/.gemini/antigravity/global_workflows/`
-  - Local: `<project>/.agent/workflows/`
+### CLI Commands
 
-## Development
+You can also use the CLI directly for automation:
 
 ```bash
-# 安装依赖
-npm install
+# Import a skill globally
+st import /path/to/my-skill -t antigravity
 
-# 构建
-npm run build
-
-# 本地测试
-node dist/bin/skill-transfer.js --help
+# Import a skill to a specific project
+st import /path/to/my-skill -t antigravity -m local -p /path/to/project
 ```
 
-## License
+#### Options
 
-ISC
+- `-t, --target <tool>`: Target tool (currently supports `antigravity`).
+- `-m, --mode <mode>`: Import mode: `global` (default) or `local`.
+- `-p, --project <path>`: Project path (required for `local` mode).
 
+## 📂 Skill Structure
+
+A "Skill" is simply a folder containing a `SKILL.md` file (and optionally other helper files).
+
+**Source Structure:**
+```
+my-skills/
+├── git-commit-helper/
+│   ├── SKILL.md      <-- The main workflow definition
+│   └── helper.js     <-- Optional helper scripts
+└── automated-tests/
+    └── SKILL.md
+```
+
+**Imported Result (Antigravity):**
+When importing `git-commit-helper` globally:
+```
+~/.gemini/antigravity/global_workflows/git-commit-helper.md
+```
+*Note: `SKILL.md` is automatically renamed to match the directory name.*
+
+## 🛠 Development
+
+1. **Clone the repository:**
+   ```bash
+   git clone https://github.com/Gnonymous/Skill-Transfer.git
+   cd Skill-Transfer
+   ```
+
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Build:**
+   ```bash
+   npm run build
+   ```
+
+4. **Run locally:**
+   ```bash
+   # Run the built binary
+   node dist/bin/skill-transfer.js interactive
+   
+   # Or using npm script
+   npm run dev
+   ```
+
+## 📄 License
+
+This project is licensed under the **ISC License**.

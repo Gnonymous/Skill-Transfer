@@ -1,0 +1,8 @@
+node_modules
+src
+.git
+.agent
+AGENTS.md
+tsconfig.json
+.DS_Store
+*.log
