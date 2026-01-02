@@ -83,6 +83,13 @@ When importing `git-commit-helper` globally:
 ```
 *Note: `SKILL.md` is automatically renamed to match the directory name.*
 
+## 🗓️ Roadmap
+
+- [ ] Support for **Claude Code**
+- [ ] Support for **Cursor**
+- [ ] Support for **Codex**
+- [ ] Add more functions
+
 ## 🛠 Development
 
 1. **Clone the repository:**
