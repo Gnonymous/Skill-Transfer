@@ -4,6 +4,8 @@
 ![license](https://img.shields.io/npm/l/skill-transfer)
 ![TypeScript](https://img.shields.io/badge/language-TypeScript-blue)
 
+![image](asset/logo.png)
+
 **Skill Transfer CLI** (`st`) is a powerful tool designed to streamline the management and sharing of AI coding skills (workflows, prompts, and configurations) between different environments and tools.
 
 It currently supports **Google Antigravity** (Gemini) adapters, allowing you to easily import workflows into your global user configuration or specific project repositories.
