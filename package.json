@@ -1,0 +1,42 @@
+{
+  "name": "skill-transfer",
+  "version": "1.0.0",
+  "description": "CLI tool to transfer AI coding skills between different tools",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "st": "./dist/bin/skill-transfer.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Gnonymous/Skill-Transfer.git"
+  },
+  "keywords": [
+    "cli",
+    "ai",
+    "skills",
+    "antigravity",
+    "workflow"
+  ],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Gnonymous/Skill-Transfer/issues"
+  },
+  "homepage": "https://github.com/Gnonymous/Skill-Transfer#readme",
+  "dependencies": {
+    "@types/fs-extra": "^11.0.4",
+    "@types/node": "^25.0.3",
+    "commander": "^14.0.2",
+    "fs-extra": "^11.3.3",
+    "typescript": "^5.9.3"
+  }
+}
