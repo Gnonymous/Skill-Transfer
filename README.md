@@ -20,6 +20,13 @@ It currently supports **Google Antigravity** (Gemini) adapters, allowing you to 
 - **Auto-Adaptation**: Automatically renames and formats files for the target environment (e.g., converting `SKILL.md` to `<SkillName>.md`).
 - **Extensible**: Designed with an adapter pattern to support future tools (Claude Code, Cursor, etc.).
 
+## 🗓️ Roadmap
+
+- [ ] Support for **Claude Code**
+- [ ] Support for **Cursor**
+- [ ] Support for **Codex**
+- [ ] Add more functions
+
 ## 📦 Installation
 
 ```bash
@@ -82,13 +89,6 @@ When importing `git-commit-helper` globally:
 ~/.gemini/antigravity/global_workflows/git-commit-helper.md
 ```
 *Note: `SKILL.md` is automatically renamed to match the directory name.*
-
-## 🗓️ Roadmap
-
-- [ ] Support for **Claude Code**
-- [ ] Support for **Cursor**
-- [ ] Support for **Codex**
-- [ ] Add more functions
 
 ## 🛠 Development
 
