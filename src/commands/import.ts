@@ -1,7 +1,7 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
 import { AntigravityAdapter } from '../adapters/AntigravityAdapter';
-import { Adapter, ImportMode } from '../core/types';
+import { Adapter, ImportMode, ResourceType } from '../core/types';
 
 const adapters: Record<string, Adapter> = {
     antigravity: new AntigravityAdapter(),
@@ -10,11 +10,12 @@ const adapters: Record<string, Adapter> = {
 export interface ImportOptions {
     target: string;
     mode: ImportMode;
+    resourceType: ResourceType;
     projectPath?: string;
 }
 
 export async function importCommand(skillPath: string, options: ImportOptions): Promise<void> {
-    const { target, mode, projectPath } = options;
+    const { target, mode, resourceType, projectPath } = options;
     const adapter = adapters[target.toLowerCase()];
 
     if (!adapter) {
@@ -54,11 +55,12 @@ export async function importCommand(skillPath: string, options: ImportOptions): 
         projectRoot = process.cwd(); // global 模式不需要 projectRoot，但传入当前目录
     }
 
-    console.log(`正在将技能从 "${skillPath}" 导入到 ${adapter.name} (${mode} 模式)...`);
-    console.log(`目标目录: ${adapter.getTargetDir(mode)}\n`);
+    const resourceTypeName = resourceType === 'skill' ? '技能' : '工作流';
+    console.log(`正在将${resourceTypeName}从 "${skillPath}" 导入到 ${adapter.name} (${mode} 模式)...`);
+    console.log(`目标目录: ${adapter.getTargetDir(mode, resourceType)}\n`);
 
     try {
-        await adapter.import(absoluteSkillPath, projectRoot, mode);
+        await adapter.import(absoluteSkillPath, projectRoot, mode, resourceType);
     } catch (error) {
         console.error('导入失败:', error);
         process.exit(1);

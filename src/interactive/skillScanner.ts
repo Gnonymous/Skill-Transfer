@@ -1,14 +1,13 @@
 import * as fs from 'fs-extra';
 import * as path from 'path';
-import { SkillInfo } from '../core/types';
-import { AntigravityAdapter } from '../adapters/AntigravityAdapter';
-
-const adapter = new AntigravityAdapter();
+import { SkillInfo, Adapter } from '../core/types';
 
 /**
  * 扫描技能源目录，获取所有技能信息
+ * @param sourceDir 源目录路径
+ * @param adapter 适配器实例，用于检查安装状态
  */
-export async function scanSkills(sourceDir: string): Promise<SkillInfo[]> {
+export async function scanSkills(sourceDir: string, adapter: Adapter): Promise<SkillInfo[]> {
     const absSourceDir = path.resolve(sourceDir);
 
     if (!await fs.pathExists(absSourceDir)) {
@@ -25,10 +24,18 @@ export async function scanSkills(sourceDir: string): Promise<SkillInfo[]> {
             const hasSkillFile = await fs.pathExists(path.join(skillPath, 'SKILL.md'));
 
             if (hasSkillFile) {
-                const isInstalled = await adapter.isInstalled(item.name);
+                // 同时检查 workflow 和 skill 两种安装状态
+                const isWorkflowInstalled = adapter.isInstalled
+                    ? await adapter.isInstalled(item.name, 'workflow')
+                    : false;
+                const isSkillInstalled = adapter.isInstalled
+                    ? await adapter.isInstalled(item.name, 'skill')
+                    : false;
+
                 skills.push({
                     name: item.name,
-                    isInstalled,
+                    isWorkflowInstalled,
+                    isSkillInstalled,
                     sourcePath: skillPath,
                 });
             }
@@ -42,7 +49,7 @@ export async function scanSkills(sourceDir: string): Promise<SkillInfo[]> {
  * 获取技能显示名称（带状态标记）
  */
 export function getSkillDisplayName(skill: SkillInfo): string {
-    const status = skill.isInstalled ? '🟢' : '⚪️';
-    const statusText = skill.isInstalled ? 'Global 已安装' : '未安装';
-    return `${status} ${skill.name} (${statusText})`;
+    const wStatus = skill.isWorkflowInstalled ? '🟢' : '⚪️';
+    const sStatus = skill.isSkillInstalled ? '🟢' : '⚪️';
+    return `${skill.name} [W:${wStatus} S:${sStatus}]`;
 }

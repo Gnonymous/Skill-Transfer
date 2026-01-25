@@ -1,6 +1,6 @@
 {
   "name": "skill-transfer",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "CLI tool to transfer AI coding skills between different tools",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

@@ -4,7 +4,7 @@
 ![license](https://img.shields.io/npm/l/skill-transfer)
 ![TypeScript](https://img.shields.io/badge/language-TypeScript-blue)
 
-![image](asset/logo.png)
+![image](https://github.com/Gnonymous/Skill-Transfer/blob/main/asset/logo.png?raw=true)
 
 **Skill Transfer CLI** (`st`) is a powerful tool designed to streamline the management and sharing of AI coding skills (workflows, prompts, and configurations) between different environments and tools.
 
@@ -56,16 +56,23 @@ This will launch the TUI where you can:
 You can also use the CLI directly for automation:
 
 ```bash
-# Import a skill globally
+# Import as Workflow globally (default)
 st import /path/to/my-skill -t antigravity
 
-# Import a skill to a specific project
+# Import as Skill globally
+st import /path/to/my-skill -t antigravity -r skill
+
+# Import as Workflow to a specific project
 st import /path/to/my-skill -t antigravity -m local -p /path/to/project
+
+# Import as Skill to a specific project
+st import /path/to/my-skill -t antigravity -r skill -m local -p /path/to/project
 ```
 
 #### Options
 
 - `-t, --target <tool>`: Target tool (currently supports `antigravity`).
+- `-r, --resource <type>`: Resource type: `workflow` (default) or `skill`.
 - `-m, --mode <mode>`: Import mode: `global` (default) or `local`.
 - `-p, --project <path>`: Project path (required for `local` mode).
 
@@ -77,18 +84,20 @@ A "Skill" is simply a folder containing a `SKILL.md` file (and optionally other 
 ```
 my-skills/
 ├── git-commit-helper/
-│   ├── SKILL.md      <-- The main workflow definition
+│   ├── SKILL.md      <-- The main definition file
 │   └── helper.js     <-- Optional helper scripts
 └── automated-tests/
     └── SKILL.md
 ```
 
 **Imported Result (Antigravity):**
-When importing `git-commit-helper` globally:
-```
-~/.gemini/antigravity/global_workflows/git-commit-helper.md
-```
-*Note: `SKILL.md` is automatically renamed to match the directory name.*
+
+| Resource Type | Global Path | Local Path |
+|---------------|-------------|------------|
+| **Workflow** | `~/.gemini/antigravity/global_workflows/git-commit-helper.md` | `.agent/workflows/git-commit-helper.md` |
+| **Skill** | `~/.gemini/antigravity/global_skills/git-commit-helper/` | `.agent/skills/git-commit-helper/` |
+
+*Note: Workflow imports rename `SKILL.md` to match the directory name. Skill imports copy the entire folder as-is.*
 
 ## 🛠 Development
 

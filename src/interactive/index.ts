@@ -20,14 +20,15 @@ import ora from 'ora';
 import { getSkillSourceDir, setSkillSourceDir, validateDirectory } from './config';
 import { scanSkills } from './skillScanner';
 import { AntigravityAdapter } from '../adapters/AntigravityAdapter';
-import { SkillInfo, ImportMode } from '../core/types';
+import { SkillInfo, ImportMode, ResourceType, Adapter } from '../core/types';
 import * as ui from './ui';
 
 const adapter = new AntigravityAdapter();
 
 interface SkillChoice {
     name: string;
-    isInstalled: boolean;
+    isWorkflowInstalled: boolean;
+    isSkillInstalled: boolean;
     sourcePath: string;
     checked: boolean;
 }
@@ -82,8 +83,8 @@ const skillSelectPrompt = createPrompt<SkillSelectResult, { skills: SkillInfo[];
             // D key to delete installed skill
             if (key.name === 'd' || key.name === 'delete' || isBackspaceKey(key)) {
                 const currentSkill = choices[cursorIndex];
-                if (!currentSkill.isInstalled) {
-                    setErrorMsg('Can only delete installed (●) skills');
+                if (!currentSkill.isWorkflowInstalled && !currentSkill.isSkillInstalled) {
+                    setErrorMsg('Can only delete installed skills');
                     return;
                 }
                 // Return 'delete' action
@@ -124,19 +125,17 @@ const skillSelectPrompt = createPrompt<SkillSelectResult, { skills: SkillInfo[];
             // Ignore all other keys (don't do anything)
         });
 
-        // Render list (like reference design: numbered, arrow marker, colored)
+        // Render list with W (workflow) and S (skill) status indicators
         const renderedChoices = choices.map((choice, index) => {
             const num = `${index + 1}.`;
             const cursor = index === cursorIndex ? chalk.cyan('>') : ' ';
             const checkbox = choice.checked ? chalk.green('◉') : chalk.gray('○');
-            const installed = choice.isInstalled ? chalk.green('●') : chalk.gray('○');
+            const wStatus = choice.isWorkflowInstalled ? chalk.green('W') : chalk.gray('W');
+            const sStatus = choice.isSkillInstalled ? chalk.green('S') : chalk.gray('S');
             const name = index === cursorIndex
                 ? chalk.cyan(choice.name)
                 : chalk.white(choice.name);
-            const statusText = choice.isInstalled
-                ? chalk.dim('Installed')
-                : chalk.dim('Not installed');
-            return `   ${cursor} ${num.padEnd(3)} ${checkbox} ${installed} ${name.padEnd(25)} ${statusText}`;
+            return `   ${cursor} ${num.padEnd(3)} ${checkbox} [${wStatus}|${sStatus}] ${name}`;
         }).join('\n');
 
         // Help bar at bottom (like reference design)
@@ -175,11 +174,35 @@ export async function runInteractiveMode(): Promise<void> {
         ui.printWelcome();
         ui.printSourceDir(sourceDir);
 
-        // Scan skills
+        // Step 1: Select target tool FIRST
+        console.log(chalk.dim('   Step 1: Select target tool\n'));
+        const toolAction = await select({
+            message: 'Select target tool:',
+            choices: [
+                { name: 'Antigravity (Google Gemini)', value: 'antigravity' },
+                { name: chalk.dim('Claude Code (Coming soon)'), value: 'claude', disabled: true },
+                { name: chalk.dim('Cursor (Coming soon)'), value: 'cursor', disabled: true },
+                { name: chalk.dim('Codex (Coming soon)'), value: 'codex', disabled: true },
+                { name: chalk.gray('Exit'), value: 'exit' },
+            ],
+        });
+
+        if (toolAction === 'exit') {
+            console.log(chalk.gray('\n   Goodbye!\n'));
+            break;
+        }
+
+        const targetTool = toolAction;
+
+        // Get adapter based on selection
+        // Currently only Antigravity is available
+        const currentAdapter = adapter; // Use the global adapter instance
+
+        // Step 2: Scan skills using the selected adapter
         const spinner = ora('Scanning skills directory...').start();
         let skills: SkillInfo[];
         try {
-            skills = await scanSkills(sourceDir);
+            skills = await scanSkills(sourceDir, currentAdapter);
             spinner.stop();
         } catch (error) {
             spinner.fail('Scan failed');
@@ -206,9 +229,10 @@ export async function runInteractiveMode(): Promise<void> {
             }
         }
 
-        console.log(chalk.dim(`   Found ${skills.length} skill(s)\n`));
+        console.log(chalk.dim(`\n   Found ${skills.length} skill(s)`));
+        console.log(chalk.dim('   [W] = Workflow installed, [S] = Skill installed\n'));
 
-        // Use custom prompt
+        // Step 3: Use custom prompt to select skills
         try {
             const result = await skillSelectPrompt({
                 skills,
@@ -231,11 +255,11 @@ export async function runInteractiveMode(): Promise<void> {
             }
 
             if (result.action === 'import' && result.selectedSkills.length > 0) {
-                await handleImportSkills(result.selectedSkills);
+                await handleImportSkills(result.selectedSkills, currentAdapter);
             }
 
             if (result.action === 'delete' && result.selectedSkills.length > 0) {
-                await handleDeleteSkill(result.selectedSkills[0]);
+                await handleDeleteSkill(result.selectedSkills[0], currentAdapter);
             }
         } catch (error) {
             // User pressed Ctrl+C
@@ -300,28 +324,38 @@ async function promptSourceDir(): Promise<string | undefined> {
 /**
  * Handle importing skills
  */
-async function handleImportSkills(selectedSkills: SkillChoice[]): Promise<void> {
+async function handleImportSkills(selectedSkills: SkillChoice[], currentAdapter: Adapter): Promise<void> {
     console.log('');
 
-    // Select target tool
-    const targetTool = await select({
-        message: 'Select target tool:',
+    // Select resource type
+    const resourceAction = await select({
+        message: 'Select install type:',
         choices: [
-            { name: 'Antigravity (Google Gemini)', value: 'antigravity' },
-            { name: chalk.dim('Claude Code (Coming soon)'), value: 'claude', disabled: true },
-            { name: chalk.dim('Cursor (Coming soon)'), value: 'cursor', disabled: true },
-            { name: chalk.dim('Codex (Coming soon)'), value: 'codex', disabled: true },
+            { name: 'Workflow - 作为工作流安装 (SKILL.md 会被重命名)', value: 'workflow' },
+            { name: 'Skill    - 作为技能安装 (整个文件夹复制)', value: 'skill' },
+            { name: chalk.gray('Cancel'), value: 'cancel' },
         ],
     });
 
+    if (resourceAction === 'cancel') {
+        return;
+    }
+    const resourceType = resourceAction as ResourceType;
+
     // Select mode
-    const mode = await select({
+    const modeAction = await select({
         message: 'Select import mode:',
         choices: [
-            { name: 'Global - Install to global directory', value: 'global' as ImportMode },
-            { name: 'Local  - Install to a specific project', value: 'local' as ImportMode },
+            { name: 'Global - Install to global directory', value: 'global' },
+            { name: 'Local  - Install to a specific project', value: 'local' },
+            { name: chalk.gray('Cancel'), value: 'cancel' },
         ],
     });
+
+    if (modeAction === 'cancel') {
+        return;
+    }
+    const mode = modeAction as ImportMode;
 
     let projectPath = process.cwd();
     if (mode === 'local') {
@@ -337,8 +371,9 @@ async function handleImportSkills(selectedSkills: SkillChoice[]): Promise<void> 
 
     // Confirm
     const skillNames = selectedSkills.map(s => s.name).join(', ');
+    const resourceTypeName = resourceType === 'skill' ? 'Skill' : 'Workflow';
     const confirmed = await confirm({
-        message: `Import [${skillNames}] to ${mode === 'global' ? 'Global' : projectPath}?`,
+        message: `Import [${skillNames}] as ${resourceTypeName} to ${mode === 'global' ? 'Global' : projectPath}?`,
         default: true,
     });
 
@@ -357,7 +392,7 @@ async function handleImportSkills(selectedSkills: SkillChoice[]): Promise<void> 
     for (const skill of selectedSkills) {
         try {
             spinner.text = `Importing: ${skill.name}`;
-            await adapter.import(skill.sourcePath, projectPath, mode);
+            await currentAdapter.import(skill.sourcePath, projectPath, mode, resourceType);
             successCount++;
         } catch (error) {
             failCount++;
@@ -373,13 +408,30 @@ async function handleImportSkills(selectedSkills: SkillChoice[]): Promise<void> 
 }
 
 /**
- * Handle deleting a single skill
+ * Handle deleting a single resource (skill or workflow)
  */
-async function handleDeleteSkill(skill: SkillChoice): Promise<void> {
+async function handleDeleteSkill(skill: SkillChoice, currentAdapter: Adapter): Promise<void> {
     console.log('');
 
+    // Select resource type to delete
+    const action = await select({
+        message: 'Select resource type to delete:',
+        choices: [
+            { name: 'Workflow', value: 'workflow' },
+            { name: 'Skill', value: 'skill' },
+            { name: chalk.gray('Cancel'), value: 'cancel' },
+        ],
+    });
+
+    if (action === 'cancel') {
+        return;
+    }
+
+    const resourceType = action as ResourceType;
+
+    const typeName = resourceType === 'skill' ? '技能' : '工作流';
     const confirmed = await confirm({
-        message: chalk.red(`Delete skill "${skill.name}"?`),
+        message: chalk.red(`Delete ${typeName} "${skill.name}"?`),
         default: false,
     });
 
@@ -390,8 +442,12 @@ async function handleDeleteSkill(skill: SkillChoice): Promise<void> {
     }
 
     try {
-        await adapter.deleteSkill(skill.name);
-        ui.printSuccess(`Deleted: ${skill.name}`);
+        if (currentAdapter.deleteResource) {
+            await currentAdapter.deleteResource(skill.name, resourceType);
+            ui.printSuccess(`Deleted: ${skill.name}`);
+        } else {
+            ui.printError('Delete not supported by this adapter');
+        }
     } catch (err) {
         ui.printError(`Delete failed: ${err instanceof Error ? err.message : String(err)}`);
     }
